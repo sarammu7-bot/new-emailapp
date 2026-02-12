@@ -42,50 +42,38 @@ pipeline {
 
         stage('Deploy & Migrate') {
     steps {
-        sshagent([env.SSH_KEY]) {
-            sh """
-            set -e
+        sh """
+        set -e
 
-            echo "📦 Creating production directory on remote"
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p ${APP_DIR}"
+        echo "📦 Copying project to production folder"
+        mkdir -p ${APP_DIR}
+        rsync -av --delete ${WORKSPACE}/ ${APP_DIR}/ --exclude venv --exclude .git
 
-            echo "📦 Syncing files to remote server"
-            rsync -avz --delete \
-                --exclude '.git' \
-                --exclude 'venv' \
-                ${WORKSPACE}/ \
-                ${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/
+        cd ${APP_DIR}
 
-            echo "🔧 Setting up Python environment on remote"
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "
-                cd ${APP_DIR}
-                rm -rf venv
-                python3 -m venv venv
-                venv/bin/python -m pip install --upgrade pip
-                venv/bin/python -m pip install -r requirements.txt
-                venv/bin/python manage.py migrate
-            "
-            """
-        }
+        echo "🧹 Rebuilding virtual environment"
+        rm -rf venv
+        python3 -m venv venv
+
+        echo "⬆️ Installing dependencies"
+        venv/bin/python -m pip install --upgrade pip
+        venv/bin/python -m pip install -r requirements.txt
+
+        echo "🗄 Running migrations"
+        venv/bin/python manage.py migrate
+        """
     }
 }
 
-
-
-        stage('Restart Services') {
-            steps {
-                sshagent([env.SSH_KEY]) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "
-                        sudo systemctl daemon-reload
-                        sudo systemctl restart fastapi
-                        sudo systemctl restart nginx
-                    "
-                    """
-                }
-            }
-        }
+stage('Restart Services') {
+    steps {
+        sh """
+        sudo systemctl daemon-reload
+        sudo systemctl restart fastapi
+        sudo systemctl restart nginx
+        """
     }
+}
 
     post {
         success {
