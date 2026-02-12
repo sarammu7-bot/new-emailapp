@@ -47,17 +47,22 @@ pipeline {
         set -e
         cd ${APP_DIR}
 
-        if [ ! -d venv ]; then
-            echo '🔧 Creating virtual environment'
-            python3 -m venv venv
-        fi
+        echo "🧹 Removing old virtual environment if exists"
+        rm -rf venv
 
-        ./venv/bin/pip install --upgrade pip
-        ./venv/bin/pip install -r requirements.txt
-        ./venv/bin/python manage.py migrate
+        echo "🔧 Creating fresh virtual environment"
+        python3 -m venv venv
+
+        echo "⬆️ Installing dependencies"
+        venv/bin/python -m pip install --upgrade pip
+        venv/bin/python -m pip install -r requirements.txt
+
+        echo "🗄 Running migrations"
+        venv/bin/python manage.py migrate
         """
     }
 }
+
 
 
 
