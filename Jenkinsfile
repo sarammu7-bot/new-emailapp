@@ -12,9 +12,9 @@ pipeline {
         DEPLOY_USER = 'ubuntu'
         DEPLOY_HOST = '172.31.21.92'
 
-        // Permanent production folder
+        // Production folder
         APP_DIR     = '/home/ubuntu/emailapp'
-   }
+    }
 
     stages {
 
@@ -34,54 +34,34 @@ pipeline {
                     npm install
                     npm run build
                 else
-                    echo "⚠️ Frontend directory not found, skipping build"
+                    echo "Frontend directory not found, skipping build"
                 fi
                 '''
             }
         }
 
         stage('Deploy & Migrate') {
-    steps {
-        sh """
-        set -e
+            steps {
+                sh """
+                set -e
 
-        echo "📦 Copying project to production folder"
-        mkdir -p ${APP_DIR}
-        rsync -av --delete ${WORKSPACE}/ ${APP_DIR}/ --exclude venv --exclude .git
+                echo "Copying project to production folder"
+                mkdir -p ${APP_DIR}
+                rsync -av --delete ${WORKSPACE}/ ${APP_DIR}/ --exclude venv --exclude .git
 
-        cd ${APP_DIR}
+                cd ${APP_DIR}
 
-        echo "🧹 Rebuilding virtual environment"
-        rm -rf venv
-        python3 -m venv venv
+                echo "Rebuilding virtual environment"
+                python3 -m venv venv
+                source venv/bin/activate
 
-        echo "⬆️ Installing dependencies"
-        venv/bin/python -m pip install --upgrade pip
-        venv/bin/python -m pip install -r requirements.txt
+                if [ -f requirements.txt ]; then
+                    pip install -r requirements.txt
+                fi
 
-        echo "🗄 Running migrations"
-        venv/bin/python manage.py migrate
-        """
-    }
-}
-
-
-stage('Restart Services') {
-    steps {
-        sh """
-        sudo systemctl daemon-reload
-        sudo systemctl restart fastapi
-        sudo systemctl restart nginx
-        """
-    }
-}
-
-    post {
-        success {
-            echo '✅ stackly-email deployed successfully'
-        }
-        failure {
-            echo '❌ Deployment failed – check stage logs'
+                echo "Deployment completed successfully"
+                """
+            }
         }
     }
 }
