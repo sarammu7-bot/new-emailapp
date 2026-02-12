@@ -5,7 +5,6 @@ pipeline {
         // Git
         GIT_CREDS  = 'github-token-emailapp'
         GIT_REPO   = 'https://github.com/sarammu7-bot/new-emailapp.git'
-
         GIT_BRANCH = 'main'
 
         // Deployment EC2
@@ -13,8 +12,8 @@ pipeline {
         DEPLOY_USER = 'ubuntu'
         DEPLOY_HOST = '172.31.21.92'
 
-        APP_DIR     = '/home/ubuntu/.jenkins/workspace/Email-app'
-
+        // ✅ Permanent production folder
+        APP_DIR     = '/home/ubuntu/emailapp'
     }
 
     stages {
@@ -41,37 +40,39 @@ pipeline {
             }
         }
 
-      stage('Deploy & Migrate') {
-    steps {
-        sh """
-        set -e
-        cd ${APP_DIR}
+        stage('Deploy & Migrate') {
+            steps {
+                sh """
+                set -e
 
-        echo "🧹 Removing old virtual environment if exists"
-        rm -rf venv
+                echo "📦 Syncing project to production folder"
+                mkdir -p ${APP_DIR}
+                rsync -av --delete ${WORKSPACE}/ ${APP_DIR}/ --exclude venv
 
-        echo "🔧 Creating fresh virtual environment"
-        python3 -m venv venv
+                cd ${APP_DIR}
 
-        echo "⬆️ Installing dependencies"
-        venv/bin/python -m pip install --upgrade pip
-        venv/bin/python -m pip install -r requirements.txt
+                echo "🧹 Removing old virtual environment"
+                rm -rf venv
 
-        echo "🗄 Running migrations"
-        venv/bin/python manage.py migrate
-        """
-    }
-}
+                echo "🔧 Creating fresh virtual environment"
+                python3 -m venv venv
 
+                echo "⬆️ Installing dependencies"
+                venv/bin/python -m pip install --upgrade pip
+                venv/bin/python -m pip install -r requirements.txt
 
-
-
+                echo "🗄 Running migrations"
+                venv/bin/python manage.py migrate
+                """
+            }
+        }
 
         stage('Restart Services') {
             steps {
                 sshagent([env.SSH_KEY]) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "
+                        sudo systemctl daemon-reload
                         sudo systemctl restart fastapi
                         sudo systemctl restart nginx
                     "
