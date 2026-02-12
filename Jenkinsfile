@@ -53,11 +53,11 @@ pipeline {
 
                 echo "Rebuilding virtual environment"
                 python3 -m venv venv
-                source venv/bin/activate
 
                 if [ -f requirements.txt ]; then
-                    pip install -r requirements.txt
+                    venv/bin/pip install -r requirements.txt
                 fi
+
 
                 echo "Deployment completed successfully"
                 """
