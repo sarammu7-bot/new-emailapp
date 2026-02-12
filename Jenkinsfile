@@ -4,14 +4,16 @@ pipeline {
     environment {
         // Git
         GIT_CREDS  = 'github-token-emailapp'
-        GIT_REPO   = 'https://github.com/thestackly/stackly-email.git'
+        GIT_REPO   = 'https://github.com/sarammu7-bot/new-emailapp.git'
+
         GIT_BRANCH = 'main'
 
         // Deployment EC2
         SSH_KEY     = 'deploy-ec2-key'
         DEPLOY_USER = 'ubuntu'
         DEPLOY_HOST = '172.31.41.124'
-        APP_DIR     = '/home/ubuntu/stackly-email'
+        APP_DIR     = '/home/ubuntu/.jenkins/workspace/Email-app'
+
     }
 
     stages {
