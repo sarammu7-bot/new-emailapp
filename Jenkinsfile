@@ -41,40 +41,25 @@ pipeline {
             }
         }
 
-        stage('Deploy & Migrate') {
-            steps {
-                sshagent([env.SSH_KEY]) {
-                    sh """
-                    rsync -avz --delete \
-                      --exclude='.git' \
-                      --exclude='node_modules' \
-                      --exclude='.ssh' \
-                      frontend/dist \
-                      django_backend \
-                      email_project \
-                      fastapi_app \
-                      manage.py \
-                      requirements.txt \
-                      ${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}
+       stage('Deploy & Migrate') {
+    steps {
+        sh """
+        set -e
+        cd ${APP_DIR}
 
-                    ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "
-                        set -e
-                        cd ${APP_DIR}
+        if [ ! -d venv ]; then
+            echo '🔧 Creating virtual environment'
+            python3 -m venv venv
+        fi
 
-                        if [ ! -d venv ]; then
-                            echo '🔧 Creating virtual environment'
-                            python3 -m venv venv
-                        fi
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        python manage.py migrate
+        """
+    }
+}
 
-                        source venv/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                        python manage.py migrate
-                    "
-                    """
-                }
-            }
-        }
 
         stage('Restart Services') {
             steps {
