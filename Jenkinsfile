@@ -11,7 +11,8 @@ pipeline {
         // Deployment EC2
         SSH_KEY     = 'deploy-ec2-key'
         DEPLOY_USER = 'ubuntu'
-        DEPLOY_HOST = '172.31.41.124'
+        DEPLOY_HOST = '172.31.21.92'
+
         APP_DIR     = '/home/ubuntu/.jenkins/workspace/Email-app'
 
     }
