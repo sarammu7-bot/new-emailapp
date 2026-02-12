@@ -12,9 +12,9 @@ pipeline {
         DEPLOY_USER = 'ubuntu'
         DEPLOY_HOST = '172.31.21.92'
 
-        // ✅ Permanent production folder
+        // Permanent production folder
         APP_DIR     = '/home/ubuntu/emailapp'
-    }
+   }
 
     stages {
 
