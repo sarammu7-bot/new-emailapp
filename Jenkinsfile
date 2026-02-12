@@ -41,7 +41,7 @@ pipeline {
             }
         }
 
-       stage('Deploy & Migrate') {
+      stage('Deploy & Migrate') {
     steps {
         sh """
         set -e
@@ -52,13 +52,13 @@ pipeline {
             python3 -m venv venv
         fi
 
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        python manage.py migrate
+        ./venv/bin/pip install --upgrade pip
+        ./venv/bin/pip install -r requirements.txt
+        ./venv/bin/python manage.py migrate
         """
     }
 }
+
 
 
         stage('Restart Services') {
