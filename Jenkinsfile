@@ -41,31 +41,36 @@ pipeline {
         }
 
         stage('Deploy & Migrate') {
-            steps {
-                sh """
-                set -e
+    steps {
+        sshagent([env.SSH_KEY]) {
+            sh """
+            set -e
 
-                echo "📦 Syncing project to production folder"
-                mkdir -p ${APP_DIR}
-                rsync -av --delete ${WORKSPACE}/ ${APP_DIR}/ --exclude venv
+            echo "📦 Creating production directory on remote"
+            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p ${APP_DIR}"
 
+            echo "📦 Syncing files to remote server"
+            rsync -avz --delete \
+                --exclude '.git' \
+                --exclude 'venv' \
+                ${WORKSPACE}/ \
+                ${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/
+
+            echo "🔧 Setting up Python environment on remote"
+            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "
                 cd ${APP_DIR}
-
-                echo "🧹 Removing old virtual environment"
                 rm -rf venv
-
-                echo "🔧 Creating fresh virtual environment"
                 python3 -m venv venv
-
-                echo "⬆️ Installing dependencies"
                 venv/bin/python -m pip install --upgrade pip
                 venv/bin/python -m pip install -r requirements.txt
-
-                echo "🗄 Running migrations"
                 venv/bin/python manage.py migrate
-                """
-            }
+            "
+            """
         }
+    }
+}
+
+
 
         stage('Restart Services') {
             steps {
